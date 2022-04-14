@@ -1,120 +1,121 @@
-/* eslint-disable react/react-in-jsx-scope */
 import { Link } from 'react-router-dom'
 import PropTypes from 'prop-types'
 import { useForm } from '@mantine/form'
-import { TextInput, PasswordInput, Group, Button, Box, Text, AppShell,
-	Header,
-	Footer,
-	MediaQuery,
-	Burger,
-	useMantineTheme,
-	Title,
-	Center, } from '@mantine/core'
-import { useState } from 'react'
+import {
+  TextInput,
+  PasswordInput,
+  Group,
+  Button,
+  Box,
+  Text,
+  AppShell,
+  Footer,
+  useMantineTheme,
+  Center,
+  Notification,
+  Container,
+  Stack,
+  Space
+} from '@mantine/core'
+import { X, Check } from 'tabler-icons-react';
 
 const SignIn = ({
-	handleSignIn,
-	handleUsernameChange,
-	handlePasswordChange,
-	username,
-	password
+  handleSignIn,
+  handleUsernameChange,
+  handlePasswordChange,
+  username,
+  password,
+  notifMessage,
+  notifClass
 }) => {
-	const theme = useMantineTheme()
-	const [opened, setOpened] = useState(false)
+  const theme = useMantineTheme()
 
-	const form = useForm({
-		initialValues: {
-			username: '',
-			password: '',
-		},
-	})
+  const form = useForm({
+    initialValues: {
+      username: '',
+      password: ''
+    }
+  })
 
-	let usernameObj = {
-		...form.getInputProps('username'),
-		value: username,
-		onChange: handleUsernameChange
-	}
+  let usernameObj = {
+    ...form.getInputProps('username'),
+    value: username,
+    onChange: handleUsernameChange
+  }
 
-	let passwordObj = {
-		...form.getInputProps('password'),
-		value: password,
-		onChange: handlePasswordChange
-	}
-    
-	return (
-		<AppShell
-			styles={{
-				main: {
-					background: theme.colorScheme === 'dark' ? theme.colors.dark[8] : theme.colors.gray[0],
-				},
-			}}
-			navbarOffsetBreakpoint="sm"
-			asideOffsetBreakpoint="sm"
-			fixed
-			footer={
-				<Footer height={60} p="md">
-            &copy; Booksgenix 2022 Inc
-				</Footer>
-			}
-			header={
-				<Header height={70} p="md">
-					<div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-						<MediaQuery largerThan="sm" styles={{ display: 'none' }}>
-							<Burger
-								opened={opened}
-								onClick={() => setOpened((o) => !o)}
-								size="sm"
-								color={theme.colors.gray[6]}
-								mr="xl"
-							/>
-						</MediaQuery>
-						<Title order={1}>Booksgenix</Title>
-					</div>
-				</Header>
-			}
-		>
-			<Center>
-				<Text>Sign in to Booksgenix</Text>
-			</Center>
-			<Center>
-				<Box sx={{ maxWidth: 340 }} mx="auto">
-					<form onSubmit={handleSignIn}>
-						<TextInput
-							label="Username"
-							placeholder="Username"
-							{...usernameObj}
-							required
-						/>
-    
-						<PasswordInput
-							label="Password"
-							placeholder="Password"
-							{...passwordObj}
-							required
-						/>
-    
-						<Text size="md">not a member ?</Text>
-						<Text variant="link" component={Link} to="/signup">sign up</Text>
+  let passwordObj = {
+    ...form.getInputProps('password'),
+    value: password,
+    onChange: handlePasswordChange
+  }
 
-						<Group position="right" mt="md">
-							<Button type="submit">Submit</Button>
-						</Group>
-					</form>
-				</Box>
+  return (
+    <AppShell
+      styles={{
+        main: {
+          background: theme.colorScheme === 'dark' ? theme.colors.dark[8] : theme.colors.gray[0]
+        }
+      }}
+      navbarOffsetBreakpoint="sm"
+      asideOffsetBreakpoint="sm"
+      fixed
+      footer={
+        <Footer height={60} p="md">
+          <Center>
+            <Text weight={500}>&copy; Booksgenix 2022 Inc</Text>
+          </Center>
+        </Footer>
+      }
+    >
+      <Container size="sm">
+        <Stack sx={(theme) => ({ backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[8] : theme.colors.gray[0], height: 300 })}>
+          <Center>
+            <Text weight={700}>Sign in to Booksgenix</Text>
+          </Center>
+          <Center>
+            {notifClass === 'error'
+              ? <Notification icon={<X size={18} />} color="red">
+                  {notifMessage}
+                </Notification>            
+              : notifClass === 'success' 
+              ? <Notification icon={<Check size={18} />} color="teal">
+                  {notifMessage}
+                </Notification>
+              : null
+            }
+          </Center>
+          <Center>
+        <Box sx={{ maxWidth: 340 }} mx="auto">
+          <form onSubmit={handleSignIn}>
+            <TextInput label="Username" placeholder="Username" {...usernameObj} required />
 
-			</Center>
-		</AppShell>
-  
-	)
-        
+            <PasswordInput label="Password" placeholder="Password" {...passwordObj} required />
+
+            <Group position="right" mt="md">
+              <Button type="submit">Submit</Button>
+            </Group>
+          </form>
+        </Box>
+      </Center>
+            <Center>
+                <Text size="md">not a member ?</Text>
+                <Space w='md'/>
+              <Text variant="link" component={Link} to="/signup">
+                sign up
+              </Text>
+            </Center>
+        </Stack>
+      </Container>
+    </AppShell>
+  )
 }
 
 SignIn.propTypes = {
-	handleSignIn: PropTypes.func.isRequired,
-	handleUsernameChange: PropTypes.func.isRequired,
-	handlePasswordChange: PropTypes.func.isRequired,
-	username: PropTypes.string.isRequired,
-	password: PropTypes.string.isRequired
+  handleSignIn: PropTypes.func.isRequired,
+  handleUsernameChange: PropTypes.func.isRequired,
+  handlePasswordChange: PropTypes.func.isRequired,
+  username: PropTypes.string.isRequired,
+  password: PropTypes.string.isRequired
 }
 
 export default SignIn
