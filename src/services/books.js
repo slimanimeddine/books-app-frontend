@@ -3,16 +3,16 @@ const baseUrl = '/api/books'
 
 let token = null
 
-const setToken = (newToken) => {
+const setToken = newToken => {
   token = `bearer ${newToken}`
 }
 
-const getAll = async () => {
+const getAllBooks = async () => {
   const response = await axios.get(baseUrl)
   return response.data
 }
 
-const create = async (newObject) => {
+const addBook = async newObject => {
   const config = {
     headers: {
       Authorization: token
@@ -23,9 +23,26 @@ const create = async (newObject) => {
   return response.data
 }
 
-const update = async (id, newObject) => {
-  const response = await axios.put(`${baseUrl}/${id}`, newObject)
+const updateBook = async (id, newObject) => {
+  const config = {
+    headers: {
+      Authorization: token
+    }
+  }
+
+  const response = await axios.put(`${baseUrl}/${id}`, newObject, config)
   return response.data
 }
 
-export default { getAll, create, update, setToken }
+const deleteBook = async id => {
+  const config = {
+    headers: {
+      Authorization: token
+    }
+  }
+
+  const response = await axios.delete(`${baseUrl}/${id}`, config)
+  return response.data
+}
+
+export default { getAllBooks, addBook, updateBook, deleteBook, setToken }

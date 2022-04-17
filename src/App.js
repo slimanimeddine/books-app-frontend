@@ -14,7 +14,6 @@ import signInService from './services/signin'
 const App = () => {
   const [books, setBooks] = useState([])
   const [shelves, setShelves] = useState([])
-  const [users, setUsers] = useState([])
   const [name, setName] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -24,18 +23,13 @@ const App = () => {
   let navigate = useNavigate()
 
   useEffect(async () => {
-    const initialBooks = await bookService.getAll()
+    const initialBooks = await bookService.getAllBooks()
     setBooks(initialBooks)
   }, [])
 
   useEffect(async () => {
-    const initialShelves = await shelfService.getAll()
+    const initialShelves = await shelfService.getAllShelves()
     setShelves(initialShelves)
-  }, [])
-
-  useEffect(async () => {
-    const initialUsers = await userService.getAll()
-    setUsers(initialUsers)
   }, [])
 
   useEffect(() => {
@@ -44,6 +38,7 @@ const App = () => {
       const user = JSON.parse(loggedUserJSON)
       setUser(user)
       bookService.setToken(user.token)
+      shelfService.setToken(user.token)
     }
   }, [])
 
@@ -56,6 +51,7 @@ const App = () => {
       })
       setUser(user)
       bookService.setToken(user.token)
+      shelfService.setToken(user.token)
       window.localStorage.setItem('loggedBookAppUser', JSON.stringify(user))
       setUsername('')
       setPassword('')
@@ -112,6 +108,30 @@ const App = () => {
     }
   }
 
+  const addShelf = async shelfObj => {
+    try {
+      const newShelf = await shelfService.addShelf(shelfObj)
+      setShelves(shelves.concat(newShelf))        
+    } catch (error) {
+      setNotifMessage(error.response.data.error.toString())
+      setTimeout(() => {
+        setNotifMessage('')
+      }, 5000)      
+    }
+  }
+
+  const addBook = async bookObj => {
+    try {
+      const newBook = await bookService.addBook(bookObj)
+      setBooks(books.concat(newBook))
+    } catch (error) {
+      setNotifMessage(error.response.data.error.toString())
+      setTimeout(() => {
+        setNotifMessage('')
+      }, 5000)      
+    }
+  }
+
   return (
     <div>
       <Routes>
@@ -119,7 +139,16 @@ const App = () => {
           path="/"
           element={
             user ? (
-              <Home username={user.username} handleSignOut={handleSignOut} books={books} shelves={shelves}/>
+              <Home 
+                username={user.username} 
+                handleSignOut={handleSignOut} 
+                books={books} 
+                shelves={shelves}
+                addShelf={addShelf}
+                notifShelfMessage={notifMessage}
+                addBook={addBook}
+                notifBookMessage={notifMessage}
+              />
             ) : (
               <Navigate replace={true} to="/signin" />
             )
@@ -165,7 +194,7 @@ const App = () => {
             )
           }
         />
-        <Route path="/playin" element={<PlayinAround  />} />
+        <Route path="/playin" element={<PlayinAround />} />
         <Route
           path="*"
           element={
