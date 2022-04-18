@@ -111,12 +111,25 @@ const App = () => {
   const addShelf = async shelfObj => {
     try {
       const newShelf = await shelfService.addShelf(shelfObj)
-      setShelves(shelves.concat(newShelf))        
-    } catch (error) {
-      setNotifMessage(error.response.data.error.toString())
+      setShelves(shelves.concat(newShelf))  
+      setNotifMessage(`shelf ${newShelf.name} added successfully`)  
+      setNotifClass('success')
       setTimeout(() => {
         setNotifMessage('')
-      }, 5000)      
+        setNotifClass('')
+        
+      }, 5000)    
+    } catch (error) {
+      if (error.response && error.response.data && error.response.data.error) {
+        setNotifMessage(error.response.data.error.toString())
+        setNotifClass('error')
+        setTimeout(() => {
+          setNotifMessage('')
+          setNotifClass('')
+        }, 5000)  
+      } else {
+        console.log(error)
+      }
     }
   }
 
@@ -124,11 +137,58 @@ const App = () => {
     try {
       const newBook = await bookService.addBook(bookObj)
       setBooks(books.concat(newBook))
-    } catch (error) {
-      setNotifMessage(error.response.data.error.toString())
+      setNotifMessage(`book ${newBook.details.title} added successfully`)  
+      setNotifClass('success')
       setTimeout(() => {
         setNotifMessage('')
-      }, 5000)      
+        setNotifClass('')
+      }, 5000)    
+    } catch (error) {
+      if (error.response && error.response.data && error.response.data.error) {
+        setNotifMessage(error.response.data.error.toString())
+        setNotifClass('error')
+        setTimeout(() => {
+          setNotifMessage('')
+          setNotifClass('')
+        }, 5000)  
+      } else {
+        console.log(error)
+      }
+    }
+  }
+
+  const updateBook = async (id, bookObj) => {
+    try {
+      const newBook = await bookService.updateBook(id, bookObj)
+      setBooks(books.map(book => book.id !== id ? book : newBook))
+      setNotifMessage(`book ${newBook.details.title} updated successfully`)  
+      setNotifClass('success')
+      setTimeout(() => {
+        setNotifMessage('')
+        setNotifClass('')
+      }, 5000)    
+    } catch (error) {
+      if (error.response && error.response.data && error.response.data.error) {
+        setNotifMessage(error.response.data.error.toString())
+        setNotifClass('error')
+        setTimeout(() => {
+          setNotifMessage('')
+          setNotifClass('')
+        }, 5000)  
+      } else {
+        console.log(error)
+      }
+    }
+
+  }
+
+  const deleteBook = async id => {
+    try {
+      const updatedBooks = books.filter((v, i) => i !== id)
+      setBooks(updatedBooks)
+      await bookService.deleteBook(id)
+    } catch (error) {
+      console.log(error)
     }
   }
 
@@ -146,8 +206,14 @@ const App = () => {
                 shelves={shelves}
                 addShelf={addShelf}
                 notifShelfMessage={notifMessage}
+                notifShelfClass={notifClass}
                 addBook={addBook}
+                deleteBook={deleteBook}
+                updateBook={updateBook}
                 notifBookMessage={notifMessage}
+                notifBookClass={notifClass}
+                notifUpdateBookClass={notifClass}
+                notifUpdateBookMessage={notifMessage}
               />
             ) : (
               <Navigate replace={true} to="/signin" />

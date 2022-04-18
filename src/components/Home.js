@@ -1,3 +1,4 @@
+import FileBase64 from 'react-file-base64'
 import React, { useState } from 'react'
 import {
   Notification,
@@ -39,7 +40,7 @@ import {
   Textarea
 } from '@mantine/core'
 import { DatePicker } from '@mantine/dates'
-import { Search, Logout, Settings, X, Edit, ListDetails, AlertCircle } from 'tabler-icons-react'
+import { Search, Logout, Settings, X, Edit, ListDetails, AlertCircle, Check } from 'tabler-icons-react'
 import { Link } from 'react-router-dom'
 import { useForm } from '@mantine/form';
 
@@ -59,7 +60,22 @@ const SelectItem = ({ image, title, genre, ...others }) => (
   </div>
 )
 
-const Home = ({ username, handleSignOut, books, shelves, addShelf, addBook, notifShelfMessage, notifBookMessage}) => {
+const Home = ({
+  username,
+  handleSignOut,
+  books,
+  shelves,
+  addShelf,
+  addBook,
+  deleteBook,
+  updateBook,
+  notifShelfClass,
+  notifBookClass,
+  notifUpdateBookClass,
+  notifShelfMessage,
+  notifBookMessage,
+  notifUpdateBookMessage
+}) => {
   const userBooks = books.filter(book => book.user.username.toString() === username)
   const userShelves = shelves.filter(shelf => shelf.user.username.toString() === username)
 
@@ -121,7 +137,7 @@ const Home = ({ username, handleSignOut, books, shelves, addShelf, addBook, noti
       />
       </td>
       <td>{book.details.title}</td>
-      <td>{book.details.authors ? book.details.authors.map(author => author.authorName).join(', ') : "not set"}</td>
+      <td>{book.details.authors ? book.details.authors.filter(author => author).map(author => author.authorName).join(', ') : "not set"} </td>
       <td>{book.details.rating ? book.details.rating : "not set"}</td>
       <td>{book.shelf ? book.shelf.name : "not set"}</td>
       <td>{book.note.dateAdded ? book.note.dateAdded.substring(0, 10) : "not set"}</td>
@@ -170,7 +186,39 @@ const Home = ({ username, handleSignOut, books, shelves, addShelf, addBook, noti
           key={book.id}
         >
         <Box mx="auto">
-          <form onSubmit={form.onSubmit((values) => console.log(values))}>
+          <form onSubmit={event => {
+            event.preventDefault()
+            let bookObj = {
+              details: {
+                title: form.values.title,
+                authors: form.values.authors.split(', ').map(a => ({
+                  authorName: a
+                })),
+                publisher: form.values.publisher,
+                isbn: form.values.isbn,
+                format: form.values.format,
+                genre: form.values.genre,
+                publishedDate: form.values.publishedDate,
+                pageNumber: form.values.pageNumber,
+                language: form.values.language,
+                price: form.values.price,
+                series: form.values.series,
+                vol: form.values.vol,
+                quantity: form.values.quantity,
+                rating: form.values.rating,
+                summary: form.values.summary,
+                image: form.values.image
+              },
+              note: {
+                pageRead: form.values.pageRead,
+                favorite: form.values.favorite,
+                dateAdded: form.values.dateAdded,
+                comments: form.values.comments 
+              },
+              shelf: form.values.shelf
+            }
+            updateBook(book.id, bookObj)
+          }}>
             <Divider my="xs" label="Book details" labelPosition="center" />
             <InputWrapper
               label="Title"
@@ -186,7 +234,6 @@ const Home = ({ username, handleSignOut, books, shelves, addShelf, addBook, noti
               description="Who are the authors of your book?, seperate the names by commas."        
             >
               <TextInput
-                value="Robin Sharma"
                 {...form.getInputProps('authors')}
 
               />
@@ -197,7 +244,6 @@ const Home = ({ username, handleSignOut, books, shelves, addShelf, addBook, noti
               description="Who published your book?"        
             >
               <TextInput
-                value="Harper"
                 {...form.getInputProps('publisher')}
 
               />
@@ -208,7 +254,6 @@ const Home = ({ username, handleSignOut, books, shelves, addShelf, addBook, noti
               description="What's the ISBN 10 or 13 number of your book?"        
             >
               <TextInput
-                value="1564868464531"
                 {...form.getInputProps('isbn')}
 
               />
@@ -277,7 +322,7 @@ const Home = ({ username, handleSignOut, books, shelves, addShelf, addBook, noti
               label="Date published"
               description="When was your book published?"        
             >
-              <DatePicker allowLevelChange={false} 
+              <DatePicker  
                 {...form.getInputProps('publishedDate')}
               />
             </InputWrapper>
@@ -380,10 +425,13 @@ const Home = ({ username, handleSignOut, books, shelves, addShelf, addBook, noti
               label="Cover"
               description="Insert a cover image for your book."        
             >
-              {/* <Input type='file' accept="image/png, image/gif, image/jpeg"
-                {...form.getInputProps('image')}
+              <FileBase64
+                type="file"
+                accept="image/png, image/gif, image/jpeg"
+                multiple={false}
+                onDone={({ base64 }) => form.setFieldValue('image', base64)}
+              />
 
-              /> */}
             </InputWrapper>
 
             <Divider my="xs" label="Book note" labelPosition="center" />
@@ -404,8 +452,9 @@ const Home = ({ username, handleSignOut, books, shelves, addShelf, addBook, noti
               description="Is this book one of your favorites?"        
             >
               <Switch onLabel="Yes" offLabel="No" size='xl'
-                {...form.getInputProps('favorite')}
-
+                checked={form.values.favorite}
+                onChange={(event) => {
+                form.setFieldValue("favorite", event.currentTarget.checked)}}  
               />
             </InputWrapper>
             <Space h="md" />
@@ -413,7 +462,7 @@ const Home = ({ username, handleSignOut, books, shelves, addShelf, addBook, noti
               label="Date added"
               description="When did you add this book to your library?"        
             >
-              <DatePicker allowLevelChange={false} 
+              <DatePicker  
                 {...form.getInputProps('dateAdded')}
               />
             </InputWrapper>
@@ -435,13 +484,29 @@ const Home = ({ username, handleSignOut, books, shelves, addShelf, addBook, noti
               <Select
                 {...form.getInputProps('shelf')}
                 data={
-                  shelves.map(shelf => ({
-                    value: shelf.name,
+                  userShelves.map(shelf => ({
+                    value: shelf.id,
                     label: shelf.name
                   }))
                 }
               /> 
             </InputWrapper>
+
+            <Space h="md" />
+
+            <Center>
+            {notifUpdateBookClass === 'error'
+              ? <Notification icon={<X size={18} />} color="red">
+                  {notifUpdateBookMessage}
+                </Notification>            
+              : notifUpdateBookClass === 'success' 
+              ? <Notification icon={<Check size={18} />} color="teal">
+                  {notifUpdateBookMessage}
+                </Notification>
+              : null
+            }
+            </Center>
+
 
             <Group position="right" mt="md">
               <Button type="submit">Submit</Button>
@@ -461,7 +526,7 @@ const Home = ({ username, handleSignOut, books, shelves, addShelf, addBook, noti
           formObj = {
             ...formObj,
             title: book.details.title,
-            authors: book.details.authors.map(author => author.authorName).join(', '),
+            authors: book.details.authors.filter(a => a).map(author => author.authorName).join(', '),
             publisher: book.details.publisher,
             isbn: book.details.isbn,
             format: book.details.format,
@@ -480,9 +545,10 @@ const Home = ({ username, handleSignOut, books, shelves, addShelf, addBook, noti
             favorite: book.note.favorite,
             dateAdded: book.note.dateAdded,
             comments: book.note.comments,
-            shelf: book.shelf.name  
+            shelf: book.shelf ? book.shelf.id : ""
           }
           form.setValues({...formObj})
+          console.log(formObj)
         }}><Edit size={16} /></ActionIcon>
         <Modal
           title={<Badge component="a" color='red' size='lg' variant="outline">
@@ -505,9 +571,21 @@ const Home = ({ username, handleSignOut, books, shelves, addShelf, addBook, noti
           </Alert>
           <Space h="md" />
           <Center>
-          <Button color="red">
-            Delete book
-          </Button>
+            <Button 
+              color="red"
+              onClick={() => {
+                deleteBook(book.id)
+                let arr = openedRemove
+                let ind = userBooks.indexOf(book)
+                if (~arr) {
+                  arr[ind] = false;
+                }
+                setOpenedRemove([...arr])
+                arr = arr.filter((a, i) => i !== ind)
+              }}
+            >
+              Delete book
+            </Button>
           </Center>
         </Modal>
         <ActionIcon variant="hover" component={Button} onClick={() => {
@@ -543,7 +621,7 @@ const Home = ({ username, handleSignOut, books, shelves, addShelf, addBook, noti
             </Grid.Col>
             <Grid.Col span={8}>
               <Text weight={700}>{book.details.title}</Text>
-              <Text size="md">by {book.details.authors ? book.details.authors.map(author => author.authorName).join(', ') : "not set"}</Text>
+              <Text size="md">by {book.details.authors ? book.details.authors.filter(author => author).map(author => author.authorName).join(', ') : "not set"}</Text>
             </Grid.Col>
             <Stack>
               <Text style={{ marginLeft: 10 }} size="md"><strong>publisher: </strong>{book.details.publisher ? book.details.publisher : "not set"}</Text>
@@ -619,10 +697,15 @@ const Home = ({ username, handleSignOut, books, shelves, addShelf, addBook, noti
                 }}
               >
                 <Center>
-                  {notifShelfMessage !== '' &&
-                     <Notification icon={<X size={18} />} color="red">
-                      {notifShelfMessage}
-                    </Notification>                              
+                  {notifShelfClass === 'error'
+                    ? <Notification icon={<X size={18} />} color="red">
+                        {notifShelfMessage}
+                      </Notification>            
+                    : notifShelfClass === 'success' 
+                    ? <Notification icon={<Check size={18} />} color="teal">
+                        {notifShelfMessage}
+                      </Notification>
+                    : null
                   }
                 </Center>
                 <Space h="md" />
@@ -686,17 +769,17 @@ const Home = ({ username, handleSignOut, books, shelves, addShelf, addBook, noti
                     shelf: ''   
                   }
                   form.setValues({...formObj})
-
                 }}
               >
-
               <Box mx="auto">
                 <form onSubmit={event => {
                   event.preventDefault()
                   let bookObj = {
                     details: {
                       title: form.values.title,
-                      authors: form.values.authors !== '' ? form.values.authors.split(',') : [],
+                      authors: form.values.authors !== '' ? form.values.authors.split(', ').map(a => ({
+                        authorName: a
+                      })) : [],
                       publisher: form.values.publisher,
                       isbn: form.values.isbn !== '' ? form.values.isbn : '0000000000',
                       format: form.values.format,
@@ -827,7 +910,7 @@ const Home = ({ username, handleSignOut, books, shelves, addShelf, addBook, noti
                     label="Date published"
                     description="When was your book published?"        
                   >
-                    <DatePicker allowLevelChange={false} 
+                    <DatePicker  
                       {...form.getInputProps('publishedDate')}
                     />
                   </InputWrapper>
@@ -930,9 +1013,11 @@ const Home = ({ username, handleSignOut, books, shelves, addShelf, addBook, noti
                     label="Cover"
                     description="Insert a cover image for your book."        
                   >
-                    <Input type='file' accept="image/png, image/gif, image/jpeg"
-                      {...form.getInputProps('image')}
-
+                    <FileBase64
+                      type="file"
+                      accept="image/png, image/gif, image/jpeg"
+                      multiple={false}
+                      onDone={({ base64 }) => form.setFieldValue('image', base64)}
                     />
                   </InputWrapper>
 
@@ -964,7 +1049,7 @@ const Home = ({ username, handleSignOut, books, shelves, addShelf, addBook, noti
                     label="Date added"
                     description="When did you add this book to your library?"        
                   >
-                    <DatePicker allowLevelChange={false} 
+                    <DatePicker  
                       {...form.getInputProps('dateAdded')}
                     />
                   </InputWrapper>
@@ -986,8 +1071,8 @@ const Home = ({ username, handleSignOut, books, shelves, addShelf, addBook, noti
                     <Select
                       {...form.getInputProps('shelf')}
                       data={
-                        shelves.map(shelf => ({
-                          value: shelf.name,
+                        userShelves.map(shelf => ({
+                          value: shelf.id,
                           label: shelf.name
                         }))
                       }
@@ -996,10 +1081,15 @@ const Home = ({ username, handleSignOut, books, shelves, addShelf, addBook, noti
                   <Space h="md" />
 
                   <Center>
-                  {notifBookMessage !== '' &&
-                     <Notification icon={<X size={18} />} color="red">
-                      {notifBookMessage}
-                    </Notification>                              
+                  {notifBookClass === 'error'
+                    ? <Notification icon={<X size={18} />} color="red">
+                        {notifBookMessage}
+                      </Notification>            
+                    : notifBookClass === 'success' 
+                    ? <Notification icon={<Check size={18} />} color="teal">
+                        {notifBookMessage}
+                      </Notification>
+                    : null
                   }
                 </Center>
 
