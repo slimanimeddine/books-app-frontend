@@ -1,5 +1,5 @@
 import FileBase64 from 'react-file-base64'
-import React, { useState } from 'react'
+import React, { useEffect, useLayoutEffect, useState } from 'react'
 import {
   Notification,
   AppShell,
@@ -40,7 +40,7 @@ import {
   Textarea
 } from '@mantine/core'
 import { DatePicker } from '@mantine/dates'
-import { Search, Logout, Settings, X, Edit, ListDetails, AlertCircle, Check } from 'tabler-icons-react'
+import { Search, Logout, Settings, X, Edit, ListDetails, AlertCircle, Check, Friends, Bell, User } from 'tabler-icons-react'
 import { Link } from 'react-router-dom'
 import { useForm } from '@mantine/form';
 
@@ -65,6 +65,7 @@ const Home = ({
   handleSignOut,
   books,
   shelves,
+  notifications,
   addShelf,
   addBook,
   deleteBook,
@@ -74,10 +75,23 @@ const Home = ({
   notifUpdateBookClass,
   notifShelfMessage,
   notifBookMessage,
-  notifUpdateBookMessage
+  notifUpdateBookMessage,
+  handleSearch
 }) => {
-  const userBooks = books.filter(book => book.user.username.toString() === username)
-  const userShelves = shelves.filter(shelf => shelf.user.username.toString() === username)
+  const userBooks = books.filter(book => book.user?.username?.toString() === username)
+  const userShelves = shelves.filter(shelf => shelf.user?.username?.toString() === username)
+  const userNotifications = notifications.filter(notification => notification.user?.username?.toString() === username)
+  const theme = useMantineTheme()
+  const [opened, setOpened] = useState(false)
+  const [openedEdit, setOpenedEdit] = useState(Array(userBooks.length).fill(false))
+  const [openedRemove, setOpenedRemove] = useState(Array(userBooks.length).fill(false))
+  const [openedDetails, setOpenedDetails] = useState(Array(userBooks.length).fill(false))
+  const [openedAddBook, setOpenedAddBook] = useState(false)
+  const [openedAddShelf, setOpenedAddShelf] = useState(false)
+  const [booksList, setBooksList] = useState([])
+  useEffect(() => {
+    setBooksList(userBooks)
+  }, [])
 
   const form = useForm({
     initialValues: {
@@ -111,36 +125,39 @@ const Home = ({
     }
   })
 
-  const theme = useMantineTheme()
-  const [opened, setOpened] = useState(false)
-  const [openedEdit, setOpenedEdit] = useState(Array(userBooks.length).fill(false))
-  const [openedRemove, setOpenedRemove] = useState(Array(userBooks.length).fill(false))
-  const [openedDetails, setOpenedDetails] = useState(Array(userBooks.length).fill(false))
-  const [openedAddBook, setOpenedAddBook] = useState(false)
-  const [openedAddShelf, setOpenedAddShelf] = useState(false)
-  const [openedDeleteLibrary, setOpenedDeleteLibrary] = useState(false)
+  const sortForm = useForm({
+    initialValues: {
+      ascDesc: '',
+      criterion: ''
+    }
+  })
 
+  const searchForm = useForm({
+    initialValues: {
+      title: ''
+    }
+  })
 
-  const data = userBooks.map(book => ({
-    image: book.details.image,
-    title: book.details.title,
-    genre: book.details.genre
+  const data = booksList.map(book => ({
+    image: book.details?.image,
+    title: book.details?.title,
+    genre: book.details?.genre
   }))
 
-  const rows = userBooks.map(book => (
+  const rows = booksList.map(book => (
     <tr key={book.id}>
       <td>
       <Image
-        src={book.details.image}
+        src={book.details?.image}
         height={70}
         width={70}
       />
       </td>
-      <td>{book.details.title}</td>
-      <td>{book.details.authors ? book.details.authors.filter(author => author).map(author => author.authorName).join(', ') : "not set"} </td>
-      <td>{book.details.rating ? book.details.rating : "not set"}</td>
-      <td>{book.shelf ? book.shelf.name : "not set"}</td>
-      <td>{book.note.dateAdded ? book.note.dateAdded.substring(0, 10) : "not set"}</td>
+      <td>{book.details?.title}</td>
+      <td>{book.details?.authors?.filter(author => author).map(author => author?.authorName).join(', ')} </td>
+      <td>{book.details?.rating}</td>
+      <td>{book.shelf?.name}</td>
+      <td>{book.note?.dateAdded?.substring(0, 10)}</td>
       <td>
         <Modal
           size='70%'
@@ -183,7 +200,7 @@ const Home = ({
             }
             form.setValues({...formObj})
           }}
-          key={book.id}
+          
         >
         <Box mx="auto">
           <form onSubmit={event => {
@@ -266,12 +283,11 @@ const Home = ({
               <Select
                 {...form.getInputProps('format')}
                 data={[
-                  { value: 'hardcover', label: 'Hardcover' },
-                  { value: 'paperback', label: 'Paperback' },
-                  { value: 'massMarketPaperback', label: 'Mass-Market Paperbackte' },
-                  { value: 'libraryBinding', label: 'Library Binding' },
-                  { value: 'spiralBinding', label: 'Spiral Binding' },
-                ]}
+                  { value: 'Hardcover', label: 'Hardcover' },
+                  { value: 'Paperback', label: 'Paperback' },
+                  { value: 'Mass-Market Paperback', label: 'Mass-Market Paperback' },
+                  { value: 'Library Binding', label: 'Library Binding' },
+                  { value: 'Spiral Binding', label: 'Spiral Binding' },                ]}
               /> 
             </InputWrapper>
             <Space h="md" />
@@ -282,39 +298,39 @@ const Home = ({
               <Select
               {...form.getInputProps('genre')}
                 data={[
-                  { value: 'artsAndPhotography', label: 'Arts & Photography' },
-                  { value: 'biographiesAndMemoirs', label: 'Biographies & Memoirs' },
-                  { value: 'businessAndMoney', label: 'Business & Money' },
-                  { value: 'calendars', label: 'Calendars' },
-                  { value: 'childrensBooks', label: "Children's Books" },
-                  { value: 'comicsAndGraphicNovels', label: "Comics & Graphic Novels" },
-                  { value: 'computersAndTechnology', label: "Computers & Technology" },
-                  { value: 'cookbooksFoodAndWine', label: "Cookbooks, Food & Wine" },
-                  { value: 'craftsHobbiesAndHome', label: "Crafts, Hobbies & Home" },
-                  { value: 'christianBooksAndBibles', label: "Christian Books & Bibles" },
-                  { value: 'engineeringAndTransportation', label: "Engineering & Transportation" },
-                  { value: 'healthFitnessAndDieting', label: "Health, Fitness & Dieting" },
-                  { value: 'history', label: "History" },
-                  { value: 'humorAndEntertainment', label: "Humor & Entertainment" },
-                  { value: 'law', label: "Law" },
-                  { value: 'literatureAndFiction', label: "Literature & Fiction" },
-                  { value: 'medicalBooks', label: "Medical Books" },
-                  { value: 'mysteryThrillerAndSuspense', label: "Mystery, Thriller & Suspense" },
-                  { value: 'parentingAndRelationships', label: "Parenting & Relationships" },
-                  { value: 'politicsAndSocialSciences', label: "Politics & Social Sciences" },
-                  { value: 'reference', label: "Reference" },
-                  { value: 'religionAndSpirituality', label: "Religion & Spirituality" },
-                  { value: 'romance', label: "Romance" },
-                  { value: 'scienceAndMath', label: "Science & Math" },
-                  { value: 'scienceFictionAndFantasy', label: "Science Fiction & Fantasy" },
-                  { value: 'selfHelp', label: "Self-Help" },
-                  { value: 'sportsAndOutdoors', label: "Sports & Outdoors" },
-                  { value: 'teenAndYoungAdult', label: "Teen & Young Adult" },
-                  { value: 'testPreparation', label: "Test Preparation" },
-                  { value: 'travel', label: "Travel" },
-                  { value: 'educationAndTeaching', label: "Education & Teaching" },
-                  { value: 'other', label: "Other" },
-                ]}
+                  { value: 'Arts & Photography', label: 'Arts & Photography' },
+                  { value: 'Biographies & Memoirs', label: 'Biographies & Memoirs' },
+                  { value: 'Business & Money', label: 'Business & Money' },
+                  { value: 'Calendars', label: 'Calendars' },
+                  { value: "Children's Books", label: "Children's Books" },
+                  { value: 'Comics & Graphic Novels', label: "Comics & Graphic Novels" },
+                  { value: 'Computers & Technology', label: "Computers & Technology" },
+                  { value: 'Cookbooks, Food & Wine', label: "Cookbooks, Food & Wine" },
+                  { value: 'Crafts, Hobbies & Home', label: "Crafts, Hobbies & Home" },
+                  { value: 'Christian Books & Bibles', label: "Christian Books & Bibles" },
+                  { value: 'Engineering & Transportation', label: "Engineering & Transportation" },
+                  { value: 'Health, Fitness & Dieting', label: "Health, Fitness & Dieting" },
+                  { value: 'History', label: "History" },
+                  { value: 'Humor & Entertainment', label: "Humor & Entertainment" },
+                  { value: 'Law', label: "Law" },
+                  { value: 'Literature & Fiction', label: "Literature & Fiction" },
+                  { value: 'Medical Books', label: "Medical Books" },
+                  { value: 'Mystery, Thriller & Suspense', label: "Mystery, Thriller & Suspense" },
+                  { value: 'Parenting & Relationships', label: "Parenting & Relationships" },
+                  { value: 'Politics & Social Sciences', label: "Politics & Social Sciences" },
+                  { value: 'Reference', label: "Reference" },
+                  { value: 'Religion & Spirituality', label: "Religion & Spirituality" },
+                  { value: 'Romance', label: "Romance" },
+                  { value: 'Science & Math', label: "Science & Math" },
+                  { value: 'Science Fiction & Fantasy', label: "Science Fiction & Fantasy" },
+                  { value: 'Self-Help', label: "Self-Help" },
+                  { value: 'Sports & Outdoors', label: "Sports & Outdoors" },
+                  { value: 'Teen & Young Adult', label: "Teen & Young Adult" },
+                  { value: 'Test Preparation', label: "Test Preparation" },
+                  { value: 'Travel', label: "Travel" },
+                  { value: 'Education & Teaching', label: "Education & Teaching" },
+                  { value: 'Other', label: "Other" },
+          ]}
               /> 
             </InputWrapper>
             <Space h="md" />
@@ -344,11 +360,11 @@ const Home = ({
               <Select
                 {...form.getInputProps('language')}
                 data={[
-                  { value: 'english', label: 'English' },
-                  { value: 'french', label: 'French' },
-                  { value: 'german', label: 'German' },
-                  { value: 'italian', label: 'Italian' },
-                  { value: 'japenese', label: 'Japenese' },
+                  { value: 'English', label: 'English' },
+                  { value: 'French', label: 'French' },
+                  { value: 'German', label: 'German' },
+                  { value: 'Italian', label: 'Italian' },
+                  { value: 'Japenese', label: 'Japenese' },
                 ]}
               /> 
             </InputWrapper>
@@ -496,11 +512,11 @@ const Home = ({
 
             <Center>
             {notifUpdateBookClass === 'error'
-              ? <Notification icon={<X size={18} />} color="red">
+              ? <Notification disallowClose icon={<X size={18} />} color="red">
                   {notifUpdateBookMessage}
                 </Notification>            
               : notifUpdateBookClass === 'success' 
-              ? <Notification icon={<Check size={18} />} color="teal">
+              ? <Notification disallowClose icon={<Check size={18} />} color="teal">
                   {notifUpdateBookMessage}
                 </Notification>
               : null
@@ -525,30 +541,29 @@ const Home = ({
           let formObj = form
           formObj = {
             ...formObj,
-            title: book.details.title,
-            authors: book.details.authors.filter(a => a).map(author => author.authorName).join(', '),
-            publisher: book.details.publisher,
-            isbn: book.details.isbn,
-            format: book.details.format,
-            genre: book.details.genre,
-            publishedDate: book.details.publishedDate,
-            pageNumber: book.details.pageNumber,
-            language: book.details.language,
-            price: book.details.price,
-            series: book.details.series,
-            vol: book.details.vol,
-            quantity: book.details.quantity,
-            rating: book.details.rating,
-            summary: book.details.summary,
-            image: book.details.image,
-            pageRead: book.note.pageRead,
-            favorite: book.note.favorite,
-            dateAdded: book.note.dateAdded,
-            comments: book.note.comments,
-            shelf: book.shelf ? book.shelf.id : ""
+            title: book.details?.title,
+            authors: book.details?.authors?.filter(a => a).map(author => author?.authorName).join(', '),
+            publisher: book.details?.publisher,
+            isbn: book.details?.isbn,
+            format: book.details?.format,
+            genre: book.details?.genre,
+            publishedDate: book.details?.publishedDate,
+            pageNumber: book.details?.pageNumber,
+            language: book.details?.language,
+            price: book.details?.price,
+            series: book.details?.series,
+            vol: book.details?.vol,
+            quantity: book.details?.quantity,
+            rating: book.details?.rating,
+            summary: book.details?.summary,
+            image: book.details?.image,
+            pageRead: book.note?.pageRead,
+            favorite: book.note?.favorite,
+            dateAdded: book.note?.dateAdded,
+            comments: book.note?.comments,
+            shelf: book.shelf?.id
           }
           form.setValues({...formObj})
-          console.log(formObj)
         }}><Edit size={16} /></ActionIcon>
         <Modal
           title={<Badge component="a" color='red' size='lg' variant="outline">
@@ -564,10 +579,9 @@ const Home = ({
             }
             setOpenedRemove([...arr])
           }}
-          key={book.id}
         >
           <Alert icon={<AlertCircle size={16} />}  color="red">
-            Are you sure you want to delete <strong>{book.details.title}</strong> from your books?  
+            Are you sure you want to delete <strong>{book.details?.title}</strong> from your books?  
           </Alert>
           <Space h="md" />
           <Center>
@@ -610,37 +624,36 @@ const Home = ({
             }
             setOpenedDetails([...arr])
           }}
-          key={book.id}
-
         >
           <Grid>
             <Grid.Col span={4}>
               <Image 
-                src={book.details.image}
+                src={book.details?.image}
               />
             </Grid.Col>
             <Grid.Col span={8}>
-              <Text weight={700}>{book.details.title}</Text>
-              <Text size="md">by {book.details.authors ? book.details.authors.filter(author => author).map(author => author.authorName).join(', ') : "not set"}</Text>
+              <Text weight={700}>{book.details?.title}</Text>
+              <Text size="md">by {book.details?.authors?.filter(author => author).map(author => author?.authorName).join(', ')}</Text>
             </Grid.Col>
             <Stack>
-              <Text style={{ marginLeft: 10 }} size="md"><strong>publisher: </strong>{book.details.publisher ? book.details.publisher : "not set"}</Text>
-              <Text style={{ marginLeft: 10 }} size="md"><strong>isbn: </strong>{book.details.isbn ? book.details.isbn : "not set"}</Text>
-              <Text style={{ marginLeft: 10 }} size="md"><strong>format: </strong>{book.details.format ? book.details.format : "not set"}</Text>
-              <Text style={{ marginLeft: 10 }} size="md"><strong>genre: </strong>{book.details.genre ? book.details.genre : "not set"}</Text>
-              <Text style={{ marginLeft: 10 }} size="md"><strong>published date: </strong>{book.details.publishedDate ? book.details.publishedDate.substring(0,10) : "not set"}</Text>
-              <Text style={{ marginLeft: 10 }} size="md"><strong>pages number: </strong>{book.details.pageNumber ? book.details.pageNumber : "not set"}</Text>
-              <Text style={{ marginLeft: 10 }} size="md"><strong>language: </strong>{book.details.language ? book.details.language : "not set"}</Text>
-              <Text style={{ marginLeft: 10 }} size="md"><strong>price: </strong>{book.details.price ? book.details.price : "not set"}</Text>
-              <Text style={{ marginLeft: 10 }} size="md"><strong>series: </strong>{book.details.series ? book.details.series : "not set"}</Text>
-              <Text style={{ marginLeft: 10 }} size="md"><strong>volume: </strong>{book.details.vol ? book.details.vol : "not set"}</Text>
-              <Text style={{ marginLeft: 10 }} size="md"><strong>quantity: </strong>{book.details.quantity ? book.details.quantity : "not set"}</Text>
-              <Text style={{ marginLeft: 10 }} size="md"><strong>rating: </strong>{book.details.rating ? book.details.rating : "not set"}</Text>
-              <Text style={{ marginLeft: 10 }} size="md"><strong>summary: </strong>{book.details.summary ? book.details.summary : "not set"}</Text>
-              <Text style={{ marginLeft: 10 }} size="md"><strong>shelf: </strong>{book.shelf ? book.shelf.name : "not set"}</Text>
-              <Text style={{ marginLeft: 10 }} size="md"><strong>pages read: </strong>{book.note.pageRead ? book.note.pageRead : "not set"}</Text>
-              <Text style={{ marginLeft: 10 }} size="md"><strong>date added: </strong>{book.note.dateAdded ? book.note.dateAdded.substring(0,10) : "not set"}</Text>
-              <Text style={{ marginLeft: 10 }} size="md"><strong>comments: </strong>{book.note.comments ? book.note.comments : "not set"}</Text>
+              <Text style={{ marginLeft: 10 }} size="md"><strong>publisher: </strong>{book.details?.publisher}</Text>
+              <Text style={{ marginLeft: 10 }} size="md"><strong>isbn: </strong>{book.details?.isbn}</Text>
+              <Text style={{ marginLeft: 10 }} size="md"><strong>format: </strong>{book.details?.format}</Text>
+              <Text style={{ marginLeft: 10 }} size="md"><strong>genre: </strong>{book.details?.genre}</Text>
+              <Text style={{ marginLeft: 10 }} size="md"><strong>published date: </strong>{book.details?.publishedDate?.substring(0,10)}</Text>
+              <Text style={{ marginLeft: 10 }} size="md"><strong>pages number: </strong>{book.details?.pageNumber}</Text>
+              <Text style={{ marginLeft: 10 }} size="md"><strong>language: </strong>{book.details?.language}</Text>
+              <Text style={{ marginLeft: 10 }} size="md"><strong>price: </strong>{book.details?.price}</Text>
+              <Text style={{ marginLeft: 10 }} size="md"><strong>series: </strong>{book.details?.series}</Text>
+              <Text style={{ marginLeft: 10 }} size="md"><strong>volume: </strong>{book.details?.vol}</Text>
+              <Text style={{ marginLeft: 10 }} size="md"><strong>quantity: </strong>{book.details?.quantity}</Text>
+              <Text style={{ marginLeft: 10 }} size="md"><strong>rating: </strong>{book.details?.rating}</Text>
+              <Text style={{ marginLeft: 10 }} size="md"><strong>summary: </strong>{book.details?.summary}</Text>
+              <Text style={{ marginLeft: 10 }} size="md"><strong>shelf: </strong>{book.shelf?.name}</Text>
+              <Text style={{ marginLeft: 10 }} size="md"><strong>pages read: </strong>{book.note?.pageRead}</Text>
+              <Text style={{ marginLeft: 10 }} size="md"><strong>favorite: </strong>{book.note?.favorite ? "yes" : "no"}</Text>
+              <Text style={{ marginLeft: 10 }} size="md"><strong>date added: </strong>{book.note?.dateAdded?.substring(0,10)}</Text>
+              <Text style={{ marginLeft: 10 }} size="md"><strong>comments: </strong>{book.note?.comments}</Text>
             </Stack>
           </Grid>
         </Modal>
@@ -672,13 +685,34 @@ const Home = ({
             <Stack>
               <Group>
                 <Text weight={500}>Bookshelves</Text>
-                <Text variant="link" component={Link} to="/somewhere">(Edit)</Text>
+                <Text variant="link" component={Link} to="/editShelves">(Edit)</Text>
               </Group>
-              <Text variant="link" component={Link} to="/somewhere">all ({userBooks.length})</Text>
+              <Text
+                  className='btn'
+                  component='button'
+                  variant="link"
+                  onClick={() => {
+                    setBooksList([...userBooks])
+                  }}
+                >
+                  all ({userBooks.length})
+                </Text>
+
               <Divider my="xs" label="Shelves" labelPosition="center" />
               {userShelves.map(shelf => (
-                <Text key={shelf.id} variant="link" component={Link} to="/somewhere">{shelf ?  `${shelf.name} (${shelf.books.length})` : ""}</Text>  
+                <Text
+                  className='btn'
+                  component='button'
+                  variant="link"
+                  key={shelf.id}
+                  onClick={() => {
+                    setBooksList([...userBooks.filter(b => b.shelf.id === shelf.id)])
+                  }}
+                >
+                  {shelf ?  `${shelf.name} (${[...new Set(shelf.books.map(book => book.id))].length})` : ""}
+                </Text>
               ))}
+             
               <Space h="md" />
               <Modal
                 title={<Badge component="a" size='lg' variant="outline">
@@ -698,11 +732,11 @@ const Home = ({
               >
                 <Center>
                   {notifShelfClass === 'error'
-                    ? <Notification icon={<X size={18} />} color="red">
+                    ? <Notification disallowClose icon={<X size={18} />} color="red">
                         {notifShelfMessage}
                       </Notification>            
                     : notifShelfClass === 'success' 
-                    ? <Notification icon={<Check size={18} />} color="teal">
+                    ? <Notification disallowClose icon={<Check size={18} />} color="teal">
                         {notifShelfMessage}
                       </Notification>
                     : null
@@ -763,7 +797,7 @@ const Home = ({
                     summary: '',
                     image: '',
                     pageRead: '',
-                    favorite: '',
+                    favorite: false,
                     dateAdded: '',
                     comments: '',
                     shelf: ''   
@@ -777,33 +811,32 @@ const Home = ({
                   let bookObj = {
                     details: {
                       title: form.values.title,
-                      authors: form.values.authors !== '' ? form.values.authors.split(', ').map(a => ({
+                      authors: form.values?.authors?.split(', ').map(a => ({
                         authorName: a
-                      })) : [],
-                      publisher: form.values.publisher,
-                      isbn: form.values.isbn !== '' ? form.values.isbn : '0000000000',
-                      format: form.values.format,
-                      genre: form.values.genre,
-                      publishedDate: form.values.publishedDate !== '' ? form.values.publishedDate : new Date(),
-                      pageNumber: form.values.pageNumber !== '' ? form.values.pageNumber : 0,
-                      language: form.values.language,
-                      price: form.values.price !== '' ? form.values.price : 0,
-                      series: form.values.series,
-                      vol: form.values.vol,
-                      quantity: form.values.quantity,
-                      rating: form.values.rating !== '' ? form.values.rating : 0,
-                      summary: form.values.summary,
-                      image: form.values.image
+                      })),
+                      publisher: form.values?.publisher,
+                      isbn: form.values?.isbn,
+                      format: form.values?.format,
+                      genre: form.values?.genre,
+                      publishedDate: form.values?.publishedDate,
+                      pageNumber: form.values?.pageNumber,
+                      language: form.values?.language,
+                      price: form.values?.price,
+                      series: form.values?.series,
+                      vol: form.values?.vol,
+                      quantity: form.values?.quantity,
+                      rating: form.values?.rating,
+                      summary: form.values?.summary,
+                      image: form.values?.image
                     },
                     note: {
-                      pageRead: form.values.pageRead !== '' ? form.values.pageRead : 0,
-                      favorite: form.values.favorite !== '' ? form.values.favorite : false,
-                      dateAdded: form.values.dateAdded !== '' ? form.values.dateAdded : new Date(),
-                      comments: form.values.comments 
+                      pageRead: form.values?.pageRead,
+                      favorite: form.values?.favorite,
+                      dateAdded: form.values?.dateAdded,
+                      comments: form.values?.comments 
                     },
-                    shelf: form.values.shelf
+                    shelf: form.values?.shelf
                   }
-                  console.log(bookObj)
                   addBook(bookObj)
                 }}>
                   <Divider my="xs" label="Book details" labelPosition="center" />
@@ -854,11 +887,11 @@ const Home = ({
                     <Select
                       {...form.getInputProps('format')}
                       data={[
-                        { value: 'hardcover', label: 'Hardcover' },
-                        { value: 'paperback', label: 'Paperback' },
-                        { value: 'massMarketPaperback', label: 'Mass-Market Paperbackte' },
-                        { value: 'libraryBinding', label: 'Library Binding' },
-                        { value: 'spiralBinding', label: 'Spiral Binding' },
+                        { value: 'Hardcover', label: 'Hardcover' },
+                        { value: 'Paperback', label: 'Paperback' },
+                        { value: 'Mass-Market Paperback', label: 'Mass-Market Paperback' },
+                        { value: 'Library Binding', label: 'Library Binding' },
+                        { value: 'Spiral Binding', label: 'Spiral Binding' },
                       ]}
                     /> 
                   </InputWrapper>
@@ -870,38 +903,38 @@ const Home = ({
                     <Select
                     {...form.getInputProps('genre')}
                       data={[
-                        { value: 'artsAndPhotography', label: 'Arts & Photography' },
-                        { value: 'biographiesAndMemoirs', label: 'Biographies & Memoirs' },
-                        { value: 'businessAndMoney', label: 'Business & Money' },
-                        { value: 'calendars', label: 'Calendars' },
-                        { value: 'childrensBooks', label: "Children's Books" },
-                        { value: 'comicsAndGraphicNovels', label: "Comics & Graphic Novels" },
-                        { value: 'computersAndTechnology', label: "Computers & Technology" },
-                        { value: 'cookbooksFoodAndWine', label: "Cookbooks, Food & Wine" },
-                        { value: 'craftsHobbiesAndHome', label: "Crafts, Hobbies & Home" },
-                        { value: 'christianBooksAndBibles', label: "Christian Books & Bibles" },
-                        { value: 'engineeringAndTransportation', label: "Engineering & Transportation" },
-                        { value: 'healthFitnessAndDieting', label: "Health, Fitness & Dieting" },
-                        { value: 'history', label: "History" },
-                        { value: 'humorAndEntertainment', label: "Humor & Entertainment" },
-                        { value: 'law', label: "Law" },
-                        { value: 'literatureAndFiction', label: "Literature & Fiction" },
-                        { value: 'medicalBooks', label: "Medical Books" },
-                        { value: 'mysteryThrillerAndSuspense', label: "Mystery, Thriller & Suspense" },
-                        { value: 'parentingAndRelationships', label: "Parenting & Relationships" },
-                        { value: 'politicsAndSocialSciences', label: "Politics & Social Sciences" },
-                        { value: 'reference', label: "Reference" },
-                        { value: 'religionAndSpirituality', label: "Religion & Spirituality" },
-                        { value: 'romance', label: "Romance" },
-                        { value: 'scienceAndMath', label: "Science & Math" },
-                        { value: 'scienceFictionAndFantasy', label: "Science Fiction & Fantasy" },
-                        { value: 'selfHelp', label: "Self-Help" },
-                        { value: 'sportsAndOutdoors', label: "Sports & Outdoors" },
-                        { value: 'teenAndYoungAdult', label: "Teen & Young Adult" },
-                        { value: 'testPreparation', label: "Test Preparation" },
-                        { value: 'travel', label: "Travel" },
-                        { value: 'educationAndTeaching', label: "Education & Teaching" },
-                        { value: 'other', label: "Other" },
+                        { value: 'Arts & Photography', label: 'Arts & Photography' },
+                        { value: 'Biographies & Memoirs', label: 'Biographies & Memoirs' },
+                        { value: 'Business & Money', label: 'Business & Money' },
+                        { value: 'Calendars', label: 'Calendars' },
+                        { value: "Children's Books", label: "Children's Books" },
+                        { value: 'Comics & Graphic Novels', label: "Comics & Graphic Novels" },
+                        { value: 'Computers & Technology', label: "Computers & Technology" },
+                        { value: 'Cookbooks, Food & Wine', label: "Cookbooks, Food & Wine" },
+                        { value: 'Crafts, Hobbies & Home', label: "Crafts, Hobbies & Home" },
+                        { value: 'Christian Books & Bibles', label: "Christian Books & Bibles" },
+                        { value: 'Engineering & Transportation', label: "Engineering & Transportation" },
+                        { value: 'Health, Fitness & Dieting', label: "Health, Fitness & Dieting" },
+                        { value: 'History', label: "History" },
+                        { value: 'Humor & Entertainment', label: "Humor & Entertainment" },
+                        { value: 'Law', label: "Law" },
+                        { value: 'Literature & Fiction', label: "Literature & Fiction" },
+                        { value: 'Medical Books', label: "Medical Books" },
+                        { value: 'Mystery, Thriller & Suspense', label: "Mystery, Thriller & Suspense" },
+                        { value: 'Parenting & Relationships', label: "Parenting & Relationships" },
+                        { value: 'Politics & Social Sciences', label: "Politics & Social Sciences" },
+                        { value: 'Reference', label: "Reference" },
+                        { value: 'Religion & Spirituality', label: "Religion & Spirituality" },
+                        { value: 'Romance', label: "Romance" },
+                        { value: 'Science & Math', label: "Science & Math" },
+                        { value: 'Science Fiction & Fantasy', label: "Science Fiction & Fantasy" },
+                        { value: 'Self-Help', label: "Self-Help" },
+                        { value: 'Sports & Outdoors', label: "Sports & Outdoors" },
+                        { value: 'Teen & Young Adult', label: "Teen & Young Adult" },
+                        { value: 'Test Preparation', label: "Test Preparation" },
+                        { value: 'Travel', label: "Travel" },
+                        { value: 'Education & Teaching', label: "Education & Teaching" },
+                        { value: 'Other', label: "Other" },
                       ]}
                     /> 
                   </InputWrapper>
@@ -932,11 +965,11 @@ const Home = ({
                     <Select
                       {...form.getInputProps('language')}
                       data={[
-                        { value: 'english', label: 'English' },
-                        { value: 'french', label: 'French' },
-                        { value: 'german', label: 'German' },
-                        { value: 'italian', label: 'Italian' },
-                        { value: 'japenese', label: 'Japenese' },
+                        { value: 'English', label: 'English' },
+                        { value: 'French', label: 'French' },
+                        { value: 'German', label: 'German' },
+                        { value: 'Italian', label: 'Italian' },
+                        { value: 'Japenese', label: 'Japenese' },
                       ]}
                     /> 
                   </InputWrapper>
@@ -1039,7 +1072,7 @@ const Home = ({
                     description="Is this book one of your favorites?"        
                   >
                     <Switch onLabel="Yes" offLabel="No" size='xl'
-                      checked={form.values.favorite}
+                      checked={form.values?.favorite}
                       onChange={(event) => {
                       form.setFieldValue("favorite", event.currentTarget.checked)}}
                     />
@@ -1082,11 +1115,11 @@ const Home = ({
 
                   <Center>
                   {notifBookClass === 'error'
-                    ? <Notification icon={<X size={18} />} color="red">
+                    ? <Notification disallowClose icon={<X size={18} />} color="red">
                         {notifBookMessage}
                       </Notification>            
                     : notifBookClass === 'success' 
-                    ? <Notification icon={<Check size={18} />} color="teal">
+                    ? <Notification disallowClose icon={<Check size={18} />} color="teal">
                         {notifBookMessage}
                       </Notification>
                     : null
@@ -1104,7 +1137,7 @@ const Home = ({
               </Modal>
         
               <Button variant="outline" onClick={() => setOpenedAddBook(true)}>Add book manually</Button>
-              <Divider my="xs" label="Statistics" labelPosition="center" />
+              {/* <Divider my="xs" label="Statistics" labelPosition="center" />
               <Text variant="link" component={Link} to="/somewhere">Reading activity</Text>
               <Text variant="link" component={Link} to="/somewhere">Books statistics</Text>
               <Text variant="link" component={Link} to="/somewhere">Shelves statistics</Text>
@@ -1131,7 +1164,7 @@ const Home = ({
 
               <Button color="red" onClick={() => setOpenedDeleteLibrary(true)}>
                 Delete library
-              </Button>
+              </Button> */}
             </Stack>
           </ScrollArea>
         </Navbar>
@@ -1140,19 +1173,100 @@ const Home = ({
         <MediaQuery smallerThan="sm" styles={{ display: 'none' }}>
           <Aside p="md" hiddenBreakpoint="sm" width={{ sm: 200, lg: 300 }}>
           <Divider my="xs" label="Sort your books" labelPosition="center" />
-            <RadioGroup label="Select sorting criterias">
+          <form onSubmit={sortForm.onSubmit(values => {
+            let sortedBooksList = booksList
+            if (values.criterion === 'title') {
+              if (values.ascDesc === 'asc')
+                setBooksList(sortedBooksList.sort((a,b) => a.details.title.localeCompare(b.details.title) ))
+              else if (values.ascDesc === 'desc') 
+                setBooksList(sortedBooksList.sort((a,b) => b.details.title.localeCompare(a.details.title) ))
+            } else if (values.criterion === 'authors') {
+              if (values.ascDesc === 'asc')
+                setBooksList(sortedBooksList.sort((a,b) => a.details.authors.map(a => a.authorName).join(', ').localeCompare(b.details.authors.map(a => a.authorName).join(', ')) ))
+              else if (values.ascDesc === 'desc') 
+                setBooksList(sortedBooksList.sort((a,b) => b.details.authors.map(a => a.authorName).join(', ').localeCompare(a.details.authors.map(a => a.authorName).join(', ')) ))
+            } else if (values.criterion === 'publisher') {
+              if (values.ascDesc === 'asc')
+                setBooksList(sortedBooksList.sort((a,b) => a.details.publisher.localeCompare(b.details.publisher) ))
+              else if (values.ascDesc === 'desc')
+                setBooksList(sortedBooksList.sort((a,b) => b.details.publisher.localeCompare(a.details.publisher) ))
+            } else if (values.criterion === 'isbn') {
+              if (values.ascDesc === 'asc')
+                setBooksList(sortedBooksList.sort((a,b) => a.details.isbn.localeCompare(b.details.isbn) ))
+              else if (values.ascDesc === 'desc')
+                setBooksList(sortedBooksList.sort((a,b) => b.details.isbn.localeCompare(a.details.isbn) ))
+            } else if (values.criterion === 'format') {
+              if (values.ascDesc === 'asc')
+                setBooksList(sortedBooksList.sort((a,b) => a.details.format.localeCompare(b.details.format) ))
+              else if (values.ascDesc === 'desc')
+                setBooksList(sortedBooksList.sort((a,b) => b.details.format.localeCompare(a.details.format) ))
+            } else if (values.criterion === 'genre') {
+              if (values.ascDesc === 'asc')
+                setBooksList(sortedBooksList.sort((a,b) => a.details.genre.localeCompare(b.details.genre) ))
+              else if (values.ascDesc === 'desc')
+                setBooksList(sortedBooksList.sort((a,b) => b.details.genre.localeCompare(a.details.genre) ))
+            } else if (values.criterion === 'publishedDate') {
+              if (values.ascDesc === 'asc')
+                setBooksList(sortedBooksList.sort((a,b) => a.details.publishedDate > b.details.publishedDate))
+              else if (values.ascDesc === 'desc')
+                setBooksList(sortedBooksList.sort((a,b) => b.details.publishedDate > a.details.publishedDate))
+            } else if (values.criterion === 'pageNumber') {
+              if (values.ascDesc === 'asc')
+                setBooksList(sortedBooksList.sort((a,b) => a.details.pageNumber - b.details.pageNumber))
+              else if (values.ascDesc === 'desc')
+                setBooksList(sortedBooksList.sort((a,b) => b.details.pageNumber - a.details.pageNumber))
+            } else if (values.criterion === 'language') {
+              if (values.ascDesc === 'asc')
+                setBooksList(sortedBooksList.sort((a,b) => a.details.language.localeCompare(b.details.language) ))
+              else if (values.ascDesc === 'desc')
+                setBooksList(sortedBooksList.sort((a,b) => b.details.language.localeCompare(a.details.language) ))
+            } else if (values.criterion === 'price') {
+              if (values.ascDesc === 'asc')
+                setBooksList(sortedBooksList.sort((a,b) => a.details.price - b.details.price))
+              else if (values.ascDesc === 'desc')
+                setBooksList(sortedBooksList.sort((a,b) => b.details.price - a.details.price))
+            } else if (values.criterion === 'rating') {
+              if (values.ascDesc === 'asc')
+                setBooksList(sortedBooksList.sort((a,b) => a.details.rating - b.details.rating))
+              else if (values.ascDesc === 'desc')
+                setBooksList(sortedBooksList.sort((a,b) => b.details.rating - a.details.rating))
+            } else if (values.criterion === 'pageRead') {
+              if (values.ascDesc === 'asc')
+                setBooksList(sortedBooksList.sort((a,b) => a.note.pageRead - b.note.pageRead))
+              else if (values.ascDesc === 'desc')
+                setBooksList(sortedBooksList.sort((a,b) => b.note.pageRead - a.note.pageRead))
+            } else if (values.criterion === 'dateAdded') {
+              if (values.ascDesc === 'asc')
+                setBooksList(sortedBooksList.sort((a,b) => a.note.dateAdded > b.note.dateAdded))
+              else if (values.ascDesc === 'desc')
+                setBooksList(sortedBooksList.sort((a,b) => b.note.dateAdded > a.note.dateAdded))
+            } else if (values.criterion === 'favorite') {
+              if (values.ascDesc === 'asc')
+                setBooksList(sortedBooksList.sort((a,b) => a.note.favorite > b.note.favorite))
+              else if (values.ascDesc === 'desc')
+                setBooksList(sortedBooksList.sort((a,b) => b.note.favorite > a.note.favorite))
+            }
+          })}>
+            <RadioGroup 
+              label="Select sorting criterion"
+              {...sortForm.getInputProps('ascDesc')}
+            >
               <Radio value="asc" label="asc" />
               <Radio value="desc" label="desc" />
             </RadioGroup>
             <Space h="md" />
             <Select
-            allowDeselect
+              allowDeselect
               maxDropdownHeight={280}
               placeholder="Choose criteria"
+              {...sortForm.getInputProps('criterion')}
+
               data={[
-                { value: 'authors', label: 'authors' },
                 { value: 'title', label: 'title' },
+                { value: 'authors', label: 'authors' },
                 { value: 'publisher', label: 'publisher' },
+                { value: 'isbn', label: 'isbn' },
+                { value: 'format', label: 'format' },
                 { value: 'genre', label: 'genre' },
                 { value: 'publishedDate', label: 'published date' },
                 { value: 'pageNumber', label: 'pages number' },
@@ -1160,10 +1274,16 @@ const Home = ({
                 { value: 'price', label: 'price' },
                 { value: 'rating', label: 'rating' },
                 { value: 'pageRead', label: 'pages read' },
-                { value: 'isbn', label: 'isbn' },
                 { value: 'dateAdded', label: 'date added' },
+                { value: 'favorite', label: 'favorite' },
               ]}
             />
+            <Center>
+              <Group position="right" mt="md">
+                <Button type="submit">sort</Button>
+              </Group>
+            </Center>
+          </form>
             <Space h="md" />
             <Divider my="xs" label="Search among your books" labelPosition="center" />
             <Select
@@ -1173,7 +1293,7 @@ const Home = ({
               data={data}
               searchable
               maxDropdownHeight={400}
-              nothingFound="Nobody here"
+              nothingFound="nothing is in here"
               filter={(value, item) =>
                 item.title.toLowerCase().includes(value.toLowerCase().trim()) ||
                 item.genre.toLowerCase().includes(value.toLowerCase().trim())
@@ -1201,26 +1321,61 @@ const Home = ({
                 mr="xl"
               />
             </MediaQuery>
-          <Title order={1}>Booksgenix</Title>
+            <Link to='/'><Title order={1}>Booksgenix</Title></Link>
+          
           <Space w="lg" />
           <Space w="lg" />
           <Space w="lg" />
           <Space w="lg" />
           <Space w="lg" />
-          <TextInput style={{ width: 670 }} placeholder="search and add books" icon={<Search size={14} />} />
-          <Space w="xs" />
-          <Button>
-            Search
-          </Button>
+          <form onSubmit={searchForm.onSubmit((values) => {
+            handleSearch(values.title.split(' ').join('+'))
+          })}>
+            <Group>
+              <TextInput 
+                style={{ width: 670 }} 
+                placeholder="search and add books" 
+                icon={<Search size={14} />} 
+                {...searchForm.getInputProps('title')}
+              />
+              <Button type="submit">Search</Button>
+            </Group>
+          </form>
           <Space w="lg" />
           <Space w="lg" />
           <Space w="lg" />
+          <Menu size={300} control={<Avatar style={{ cursor: "pointer" }} color="cyan" radius="xl">
+            <Bell size={24} />
+          </Avatar>
+          }>
+            <Menu.Label>Notifications</Menu.Label>
+              <Menu.Item className="item">
+                <Stack>
+                  {
+                    userNotifications.length > 0
+                    ? userNotifications.map(notif => (
+                      <Group>
+                        <Avatar color="cyan" radius="xl">
+                          <User size={24} />
+                        </Avatar>
+                        <div>
+                          <Text size="sm">{notif.content?.toString()}</Text>
+                          <Text size="xs" color="dimmed">{notif.dateSent?.toString()}</Text>
+                        </div>
+                      </Group>
+                    ))
+                    : <div>
+                        <Text size="sm">you have no notifications</Text>
+                      </div>
+                  }
+                </Stack>
+              </Menu.Item>
+          </Menu>
           <Space w="lg" />
           <Space w="lg" />
-          <Space w="lg" />
-          <Space w="lg" />
-          <Space w="lg" />
-          <Space w="lg" />
+          <Avatar component={Link} to="/friends" style={{ cursor: "pointer" }} color="cyan" radius="xl">
+            <Friends size={24} />
+          </Avatar>
           <Space w="lg" />
           <Space w="lg" />
           <Menu control={<Avatar style={{ cursor: "pointer" }} color="cyan" radius="xl">{username.substring(0,2)}</Avatar>}>

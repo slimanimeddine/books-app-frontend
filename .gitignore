@@ -24,3 +24,4 @@ yarn-error.log*
 /src/components/PlayinAround.js
 .eslintrc.js
 .prettierrc
+.env

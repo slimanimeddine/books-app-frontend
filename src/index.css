@@ -1,0 +1,12 @@
+.btn {
+  border: none;
+  background: none!important;
+  padding: 0!important;
+  margin: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.item {
+  pointer-events: none;
+}

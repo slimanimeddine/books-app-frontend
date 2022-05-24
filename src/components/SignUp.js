@@ -83,11 +83,11 @@ const SignUp = ({
       </Center>
       <Center>
         {notifClass === 'error'
-          ? <Notification icon={<X size={18} />} color="red">
+          ? <Notification disallowClose icon={<X size={18} />} color="red">
               {notifMessage}
             </Notification>            
           : notifClass === 'success' 
-          ? <Notification icon={<Check size={18} />} color="teal">
+          ? <Notification disallowClose icon={<Check size={18} />} color="teal">
               {notifMessage}
             </Notification>
           : null

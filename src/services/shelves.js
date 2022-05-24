@@ -30,7 +30,7 @@ const updateShelf = async (id, newObject) => {
     }
   }
 
-  const response = await axios.put(`${baseUrl}/${id}`, newObject)
+  const response = await axios.put(`${baseUrl}/${id}`, newObject, config)
   return response.data
 }
 

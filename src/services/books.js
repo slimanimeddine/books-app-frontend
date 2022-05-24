@@ -1,5 +1,6 @@
 import axios from 'axios'
 const baseUrl = '/api/books'
+const REACT_APP_API_KEY = process.env.REACT_APP_API_KEY
 
 let token = null
 
@@ -45,4 +46,9 @@ const deleteBook = async id => {
   return response.data
 }
 
-export default { getAllBooks, addBook, updateBook, deleteBook, setToken }
+const searchBooksOnline = async query => {
+  const response = await axios.get(`https://www.googleapis.com/books/v1/volumes?q=intitle:${query}&key=${REACT_APP_API_KEY}`)
+  return response.data
+}
+
+export default { getAllBooks, addBook, updateBook, deleteBook, setToken, searchBooksOnline }
